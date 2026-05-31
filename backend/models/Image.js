@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const imageSchema = new mongoose.Schema({
   name: { type: String, required: true },
   filepath: { type: String, required: true },
+  public_id: { type: String },
   size: { type: Number, required: true },
   folder: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder', default: null },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

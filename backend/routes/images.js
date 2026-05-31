@@ -5,23 +5,25 @@ const Image = require('../models/Image');
 const Folder = require('../models/Folder');
 const { protect } = require('../middleware/auth');
 const fs = require('fs');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const router = express.Router();
 
 router.use(protect);
 
-// Configure multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'dobby-ads', // Cloudinary folder
+    allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'webp']
   }
 });
 
@@ -34,8 +36,12 @@ router.get('/', async (req, res) => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const expiredImages = await Image.find({ user: req.user._id, isTrashed: true, trashedAt: { $lt: thirtyDaysAgo } });
     for (let img of expiredImages) {
-      const fullPath = path.join(__dirname, '..', img.filepath);
-      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+      if (img.public_id) {
+        await cloudinary.uploader.destroy(img.public_id);
+      } else {
+        const fullPath = path.join(__dirname, '..', img.filepath);
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+      }
       await Image.findByIdAndDelete(img._id);
     }
 
@@ -90,11 +96,16 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     const existingImage = await Image.findOne({ name, folder: folderId, user: req.user._id, isTrashed: false });
     if (existingImage) {
-      const oldPath = path.join(__dirname, '..', existingImage.filepath);
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
+      if (existingImage.public_id) {
+        await cloudinary.uploader.destroy(existingImage.public_id);
+      } else {
+        const oldPath = path.join(__dirname, '..', existingImage.filepath);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
       }
-      existingImage.filepath = `/uploads/${req.file.filename}`;
+      existingImage.filepath = req.file.path; // Cloudinary URL
+      existingImage.public_id = req.file.filename; // Cloudinary public_id
       existingImage.size = req.file.size;
       await existingImage.save();
       return res.status(200).json(existingImage);
@@ -102,7 +113,8 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     const image = await Image.create({
       name,
-      filepath: `/uploads/${req.file.filename}`,
+      filepath: req.file.path,
+      public_id: req.file.filename,
       size: req.file.size,
       folder: folderId,
       user: req.user._id
@@ -240,9 +252,13 @@ router.delete('/:id', async (req, res) => {
     if (!image) return res.status(404).json({ message: 'Image not found' });
     
     // Physically delete file
-    const fullPath = path.join(__dirname, '..', image.filepath);
-    if (fs.existsSync(fullPath)) {
-      fs.unlinkSync(fullPath);
+    if (image.public_id) {
+      await cloudinary.uploader.destroy(image.public_id);
+    } else {
+      const fullPath = path.join(__dirname, '..', image.filepath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
     }
     
     res.json({ message: 'Image deleted' });

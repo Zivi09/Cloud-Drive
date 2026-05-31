@@ -289,7 +289,8 @@ const Dashboard = () => {
 
   const handleDownload = (img) => {
     const link = document.createElement('a');
-    link.href = `${import.meta.env.VITE_API_URL}${img.filepath}`;
+    const imageUrl = img.filepath.startsWith('http') ? img.filepath : `${import.meta.env.VITE_API_URL}${img.filepath}`;
+    link.href = imageUrl;
     link.download = img.name;
     link.target = '_blank';
     document.body.appendChild(link);
@@ -755,7 +756,7 @@ const Dashboard = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                   <div style={{ width: '32px', height: '32px', borderRadius: '4px', overflow: 'hidden', background: '#f1f3f4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                     <img 
-                                      src={`${import.meta.env.VITE_API_URL}${img.filepath}`} 
+                                      src={img.filepath.startsWith('http') ? img.filepath : `${import.meta.env.VITE_API_URL}${img.filepath}`} 
                                       alt={img.name} 
                                       style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                                       onError={(e) => {
@@ -1148,7 +1149,7 @@ const Dashboard = () => {
             minWidth: 0
           }}>
             <img 
-              src={`${import.meta.env.VITE_API_URL}${previewImage.filepath}`} 
+              src={previewImage.filepath.startsWith('http') ? previewImage.filepath : `${import.meta.env.VITE_API_URL}${previewImage.filepath}`} 
               alt={previewImage.name} 
               style={{
                 maxWidth: '100%',
