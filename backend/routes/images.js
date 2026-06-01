@@ -106,7 +106,7 @@ router.post('/', upload.single('image'), async (req, res) => {
       }
       existingImage.filepath = req.file.path; // Cloudinary URL
       existingImage.public_id = req.file.filename; // Cloudinary public_id
-      existingImage.size = req.file.size;
+      existingImage.size = req.file.size || req.file.bytes || 0;
       await existingImage.save();
       return res.status(200).json(existingImage);
     }
@@ -115,7 +115,7 @@ router.post('/', upload.single('image'), async (req, res) => {
       name,
       filepath: req.file.path,
       public_id: req.file.filename,
-      size: req.file.size,
+      size: req.file.size || req.file.bytes || 0,
       folder: folderId,
       user: req.user._id
     });

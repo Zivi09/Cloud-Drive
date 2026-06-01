@@ -9,7 +9,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -29,3 +33,12 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/dobby-ads')
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.log(err));
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Global Error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error',
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack
+  });
+});

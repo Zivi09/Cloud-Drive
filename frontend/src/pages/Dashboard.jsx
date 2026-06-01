@@ -245,6 +245,7 @@ const Dashboard = () => {
   const handleUploadImage = async (e) => {
     e.preventDefault();
     if (!imageFile) return;
+    setIsUploading(true);
     const formData = new FormData();
     formData.append('name', imageName);
     formData.append('image', imageFile);
@@ -263,7 +264,10 @@ const Dashboard = () => {
       setShowImageModal(false);
       fetchContents();
     } catch (error) {
-      console.error(error);
+      console.error('Upload Error:', error);
+      alert('Upload failed: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsUploading(false);
     }
   };
 
