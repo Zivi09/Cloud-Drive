@@ -681,7 +681,7 @@ const Dashboard = () => {
                           <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>
                             {new Date(f.updatedAt || f.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </td>
-                          <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>—</td>
+                          <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{formatSize(f.size)}</td>
                           <td style={{ padding: '12px 16px', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                               <button style={actionBtnStyle} onClick={(e) => handleFolderToggleStar(f, e)} title="Star">
